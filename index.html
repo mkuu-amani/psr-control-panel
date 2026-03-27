@@ -69,7 +69,7 @@ input { border-radius:6px; border:none; margin-right:10px; }
 const ticker = document.getElementById("psrTicker");
 const scrollSpeed = 55; // px per second
 
-// Your Google Script deployed URL
+// Google Script deployed URL for control panel messages
 const SHEET_API = "https://script.google.com/macros/s/AKfycbwUjfx6Wm0etSb4V3GO6WjxNp6veeAFcCtlSRZqJI3olyWGhhaZHM3Sa1KTeRwXN-Bo/exec";
 
 // =========================
@@ -92,8 +92,11 @@ function addToTicker(text) {
   ticker.appendChild(span);
 }
 
+// =========================
+// BUILD TICKER
+// =========================
 async function buildTicker() {
-  ticker.innerHTML = "";
+  ticker.innerHTML = ""; // clear previous content
 
   const sheetMessages = await getSheetMessages();
   if(sheetMessages.length === 0){
@@ -105,8 +108,10 @@ async function buildTicker() {
   // Duplicate for smooth scroll
   ticker.innerHTML += ticker.innerHTML;
 
-  // Start animation
+  // Restart animation properly
   const move = document.querySelector(".psr-move");
+  move.style.animation = "none";         // stop previous animation
+  void move.offsetWidth;                 // force browser reflow
   const totalWidth = move.scrollWidth;
   const duration = totalWidth / scrollSpeed;
   move.style.animation = `scroll ${duration}s linear infinite`;
