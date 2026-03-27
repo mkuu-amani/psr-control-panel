@@ -12,6 +12,10 @@
       padding: 50px;
     }
 
+    h1 {
+      margin-bottom: 40px;
+    }
+
     button {
       padding: 15px 25px;
       font-size: 18px;
@@ -27,7 +31,6 @@
       background: #17a74a;
     }
 
-    /* NEW (minimal styling only) */
     #cover {
       width: 200px;
       height: 200px;
@@ -40,62 +43,97 @@
       margin-top: 15px;
       font-size: 18px;
     }
+
+    input {
+      padding: 10px;
+      width: 250px;
+      border-radius: 6px;
+      border: none;
+      margin-top: 20px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
 
   <h1>🎧 Prodigal Sun Radio Control</h1>
 
-  <!-- NEW: Now Playing -->
+  <!-- Now Playing -->
   <img id="cover" src="https://i.imgur.com/QPevqGi.png">
   <div id="track">Loading current track...</div>
 
+  <!-- Manual post to Facebook -->
   <button onclick="postNowPlaying()">Post Now Playing</button>
-
   <p id="status"></p>
 
+  <!-- Ticker Control -->
+  <div>
+    <input id="tickerInput" placeholder="Enter ticker message">
+    <button onclick="sendTicker()">Update Ticker</button>
+  </div>
+
   <script>
-    /* EXISTING FUNCTION (UNCHANGED) */
-    function postNowPlaying() {
-      document.getElementById("status").innerText = "Sending...";
+    /* =========================
+    CONFIG
+    ========================= */
+    const NOW_PLAYING_API = "https://api.radioking.io/widget/radio/the-channel-x/track/current";
+    const ZAPIER_HOOK = "https://hooks.zapier.com/hooks/catch/25494123/ugnx0s6/";
+    const TICKER_API = "https://script.google.com/macros/s/AKfycbwUjfx6Wm0etSb4V3GO6WjxNp6veeAFcCtlSRZqJI3olyWGhhaZHM3Sa1KTeRwXN-Bo/exec"; // Google Script for ticker
 
-      fetch("https://hooks.zapier.com/hooks/catch/25494123/ugnx0s6/", {
-        method: "POST"
-      })
-      .then(response => {
-        document.getElementById("status").innerText = "Posted successfully!";
-      })
-      .catch(error => {
-        document.getElementById("status").innerText = "Error sending request.";
-      });
-    }
-
-    /* NEW: Now Playing Fetch */
-    const API = "https://api.radioking.io/widget/radio/the-channel-x/track/current";
-
+    /* =========================
+    FETCH NOW PLAYING
+    ========================= */
     async function updateNowPlaying() {
       try {
-        const res = await fetch(API, { cache: "no-store" });
+        const res = await fetch(NOW_PLAYING_API, { cache: "no-store" });
         const data = await res.json();
 
         const artist = data.artist || "Unknown Artist";
         const title = data.title || "Unknown Title";
         const cover = data.cover || "https://i.imgur.com/QPevqGi.png";
 
-        document.getElementById("track").innerText =
-          artist + " - " + title;
-
+        document.getElementById("track").innerText = artist + " - " + title;
         document.getElementById("cover").src = cover;
-
-      } catch (err) {
-        document.getElementById("track").innerText =
-          "Unable to load track";
+      } catch(err) {
+        document.getElementById("track").innerText = "Unable to load track";
       }
     }
 
-    // Run immediately + every 15 seconds
     updateNowPlaying();
     setInterval(updateNowPlaying, 15000);
+
+    /* =========================
+    POST TO FACEBOOK (Zapier)
+    ========================= */
+    function postNowPlaying() {
+      document.getElementById("status").innerText = "Sending...";
+
+      fetch(ZAPIER_HOOK, { method: "POST" })
+        .then(response => {
+          document.getElementById("status").innerText = "Posted successfully!";
+        })
+        .catch(error => {
+          document.getElementById("status").innerText = "Error sending request.";
+        });
+    }
+
+    /* =========================
+    SEND TICKER MESSAGE
+    ========================= */
+    function sendTicker() {
+      const msg = document.getElementById("tickerInput").value.trim();
+      if(!msg) return alert("Enter a message");
+
+      fetch(TICKER_API, {
+        method: "POST",
+        body: JSON.stringify({ message: msg })
+      })
+      .then(() => {
+        alert("Ticker updated!");
+        document.getElementById("tickerInput").value = "";
+      })
+      .catch(() => alert("Error updating ticker"));
+    }
   </script>
 
 </body>
