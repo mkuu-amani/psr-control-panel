@@ -9,12 +9,14 @@
       background: #111;
       color: #fff;
       text-align: center;
-      padding: 50px;
+      padding: 40px;
     }
 
+    h1 { margin-bottom: 30px; }
+
     button {
-      padding: 15px 25px;
-      font-size: 18px;
+      padding: 12px 25px;
+      font-size: 16px;
       margin: 10px;
       border: none;
       border-radius: 8px;
@@ -23,9 +25,7 @@
       color: white;
     }
 
-    button:hover {
-      background: #17a74a;
-    }
+    button:hover { background: #17a74a; }
 
     #albumArt {
       width: 240px;
@@ -36,17 +36,18 @@
       box-shadow: 0 0 35px #C9A227, 0 0 65px #B8860B;
     }
 
-    #artist {
-      font-size: 1.5em;
-      font-weight: bold;
-      margin-bottom: 5px;
+    #artist { font-size: 1.5em; font-weight: bold; margin-bottom: 5px; }
+    #title { font-size: 1.2em; opacity: 0.9; margin-bottom: 20px; }
+
+    input[type="text"] {
+      width: 300px;
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      margin-top: 15px;
     }
 
-    #title {
-      font-size: 1.2em;
-      opacity: 0.9;
-      margin-bottom: 15px;
-    }
+    p.status { margin-top: 10px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -58,14 +59,22 @@
   <div id="title">Please wait</div>
 
   <button onclick="postNowPlaying()">Post Now Playing to Facebook</button>
-  <p id="status"></p>
+  <p id="fbStatus" class="status"></p>
+
+  <div>
+    <input type="text" id="newMessage" placeholder="Enter message for ticker">
+    <button onclick="postMessage()">Add to Ticker</button>
+    <p id="msgStatus" class="status"></p>
+  </div>
 
   <script>
-    const API = "https://api.radioking.io/widget/radio/the-channel-x/track/current";
+    const NOW_PLAYING_API = "https://api.radioking.io/widget/radio/the-channel-x/track/current";
+    const SHEET_POST_URL = "https://script.google.com/macros/s/AKfycbwUjfx6Wm0etSb4V3GO6WjxNp6veeAFcCtlSRZqJI3olyWGhhaZHM3Sa1KTeRwXN-Bo/exec"; // replace with your doPost URL
 
+    // ================== UPDATE NOW PLAYING ==================
     async function updateNowPlaying() {
       try {
-        const res = await fetch(API, { cache: "no-store" });
+        const res = await fetch(NOW_PLAYING_API, { cache: "no-store" });
         const data = await res.json();
 
         const artist = data.artist || "Unknown Artist";
@@ -81,22 +90,39 @@
         document.getElementById("title").textContent = "";
       }
     }
-
-    // refresh now playing every 15 seconds
     updateNowPlaying();
-    setInterval(updateNowPlaying, 15000);
+    setInterval(updateNowPlaying, 15000); // refresh every 15s
 
+    // ================== POST NOW PLAYING ==================
     function postNowPlaying() {
-      document.getElementById("status").innerText = "Sending...";
-
+      document.getElementById("fbStatus").innerText = "Sending...";
       fetch("https://hooks.zapier.com/hooks/catch/25494123/ugnx0s6/", {
         method: "POST"
       })
-      .then(() => {
-        document.getElementById("status").innerText = "Posted successfully!";
+      .then(() => { document.getElementById("fbStatus").innerText = "Posted successfully!"; })
+      .catch(() => { document.getElementById("fbStatus").innerText = "Error sending request."; });
+    }
+
+    // ================== POST MESSAGE TO SHEET ==================
+    function postMessage() {
+      const msg = document.getElementById("newMessage").value.trim();
+      if(!msg) return alert("Please enter a message");
+
+      document.getElementById("msgStatus").innerText = "Sending...";
+
+      fetch(SHEET_POST_URL, {
+        method: "POST",
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({message: msg})
       })
-      .catch(() => {
-        document.getElementById("status").innerText = "Error sending request.";
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("msgStatus").innerText = "Message added!";
+        document.getElementById("newMessage").value = "";
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById("msgStatus").innerText = "Error adding message";
       });
     }
   </script>
