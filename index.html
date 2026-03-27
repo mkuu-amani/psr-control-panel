@@ -1,1 +1,125 @@
-<!-- PRODIGAL SUN RADIO GLOBAL SCROLLING TICKER --> <div class="psr-ticker"> <div class="psr-label">PSR LIVE</div> <div class="psr-wrap"> <div class="psr-move" id="psrTicker"></div> </div> </div> <style> .psr-ticker{ display:flex; align-items:center; background:#0b0b0b; border-radius:14px; padding:10px 16px; overflow:hidden; font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif; } .psr-label{ font-size:18px; font-weight:700; margin-right:14px; color:#f7c873; white-space:nowrap; } .psr-wrap{ flex:1; overflow:hidden; } .psr-move{ display:inline-flex; gap:56px; white-space:nowrap; } .psr-move span{ font-size:18px; color:#f7c873; } @keyframes scroll{ 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} } .psr-ticker:hover .psr-move{ animation-play-state:paused; } </style> <script> /* ========================= CONFIG ========================= */ const ticker = document.getElementById("psrTicker"); const scrollSpeed = 55; // px per second // RadioKing Now Playing API const NOW_PLAYING_API = "https://api.radioking.io/widget/radio/the-channel-x/track/current"; // Google Script doGet URL (replace with your actual URL) const SHEET_API = "https://script.google.com/macros/s/AKfycbwUjfx6Wm0etSb4V3GO6WjxNp6veeAFcCtlSRZqJI3olyWGhhaZHM3Sa1KTeRwXN-Bo/exec"; // Shoutouts / station messages const cities = ["Walsall","Birmingham","London","Wolverhampton","Coventry","Nottingham","Cannock","Lagos","Elba","Poole","Sutton","Glasgow","Sterling","Tipton","Paris","Nice","Toxteth","Leeds","Turin","Bristol","Toronto","Kingston","New York"]; const stationMessages = [ "🎧 You're listening to Prodigal Sun Radio — Rise With The Sun", "🔥 Tune in to The Peace Love & House Show with DJ Cocomotion, weekdays at 1pm and 7pm", "☀️ Gabriel Deb's Sunny Galaxy - lighting up the airwaves at 4pm", "🎶 Afro House • EDM • Dance • House •Reggae", "🌍 Independent radio supporting global music culture" ]; const welcomeMessages = [ "🎵 Welcome to Prodigal Sun Radio! Sign the guest book 🌍", "💛 Let the world know you're listening!", "🔥 Join the global listener roll call!", "☀️ Share your city and spread the love!" ]; let listeners = []; let listenerIndex = 0; let welcomeIndex = 0; /* ========================= HELPER FUNCTIONS ========================= */ async function getNowPlaying() { try { const res = await fetch(NOW_PLAYING_API,{cache:"no-store"}); const data = await res.json(); const artist = data.artist || "Unknown Artist"; const title = data.title || "Unknown Title"; return 🎵 Now Playing: ${artist} – ${title}; } catch(e) { return "🎵 Music streaming live on Prodigal Sun Radio"; } } function getShoutout() { const city = cities[Math.floor(Math.random()*cities.length)]; return 💛 Shoutout to listeners in ${city}; } function getListener() { if(listeners.length===0) return null; const l = listeners[listenerIndex]; listenerIndex = (listenerIndex+1)%listeners.length; return ${l.flag} ${l.name} listening from ${l.location}; } function getWelcome() { const msg = welcomeMessages[welcomeIndex]; welcomeIndex = (welcomeIndex+1)%welcomeMessages.length; return msg; } async function getSheetMessages() { try { const res = await fetch(SHEET_API); const data = await res.json(); return data; // expects array of strings } catch(err) { console.log("Error fetching ticker messages", err); return []; } } function addToTicker(text) { const span = document.createElement("span"); span.textContent = text; ticker.appendChild(span); } /* ========================= BUILD TICKER ========================= */ async function buildTicker() { ticker.innerHTML = ""; // Now Playing addToTicker(await getNowPlaying()); // Shoutout addToTicker(getShoutout()); // Station Promos stationMessages.forEach(msg => addToTicker(msg)); // Listener Roll Call or Welcome if(listeners.length>0) addToTicker(getListener()); else addToTicker(getWelcome()); // Add messages from the Google Sheet const sheetMessages = await getSheetMessages(); sheetMessages.forEach(msg => addToTicker(msg)); // Duplicate for smooth scroll ticker.innerHTML += ticker.innerHTML; // Start scrolling const move = document.querySelector(".psr-move"); const totalWidth = move.scrollWidth; const duration = totalWidth/scrollSpeed; move.style.animation = scroll ${duration}s linear infinite; } // initial build buildTicker(); // refresh ticker every 20 minutes setInterval(buildTicker, 1200000); </script>
+<!-- PRODIGAL SUN RADIO GLOBAL SCROLLING TICKER -->
+<div class="psr-ticker">
+  <div class="psr-label">PSR LIVE</div>
+  <div class="psr-wrap">
+    <div class="psr-move" id="psrTicker"></div>
+  </div>
+</div>
+
+<style>
+.psr-ticker {
+  display: flex;
+  align-items: center;
+  background: #0b0b0b;
+  border-radius: 14px;
+  padding: 10px 16px;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.psr-label {
+  font-size: 18px;
+  font-weight: 700;
+  margin-right: 14px;
+  color: #f7c873;
+  white-space: nowrap;
+}
+
+.psr-wrap {
+  flex: 1;
+  overflow: hidden;
+}
+
+.psr-move {
+  display: inline-flex;
+  gap: 56px;
+  white-space: nowrap;
+}
+
+.psr-move span {
+  font-size: 18px;
+  color: #f7c873;
+}
+
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.psr-ticker:hover .psr-move {
+  animation-play-state: paused;
+}
+</style>
+
+<script>
+/* ========================= CONFIG ========================= */
+const ticker = document.getElementById("psrTicker");
+const scrollSpeed = 55; // px per second
+
+// RadioKing Now Playing API
+const NOW_PLAYING_API = "https://api.radioking.io/widget/radio/the-channel-x/track/current";
+
+// Google Script doGet URL
+const SHEET_API = "https://script.google.com/macros/s/AKfycbwUjfx6Wm0etSb4V3GO6WjxNp6veeAFcCtlSRZqJI3olyWGhhaZHM3Sa1KTeRwXN-Bo/exec";
+
+/* ========================= HELPER FUNCTIONS ========================= */
+async function getNowPlaying() {
+  try {
+    const res = await fetch(NOW_PLAYING_API, { cache: "no-store" });
+    const data = await res.json();
+    const artist = data.artist || "Unknown Artist";
+    const title = data.title || "Unknown Title";
+    return `🎵 Now Playing: ${artist} – ${title}`;
+  } catch (e) {
+    return "🎵 Music streaming live on Prodigal Sun Radio";
+  }
+}
+
+async function getSheetMessages() {
+  try {
+    const res = await fetch(SHEET_API);
+    const data = await res.json();
+    return data; // expects array of strings
+  } catch (err) {
+    console.log("Error fetching ticker messages", err);
+    return [];
+  }
+}
+
+function addToTicker(text) {
+  const span = document.createElement("span");
+  span.textContent = text;
+  ticker.appendChild(span);
+}
+
+/* ========================= BUILD TICKER ========================= */
+async function buildTicker() {
+  ticker.innerHTML = "";
+
+  // Now Playing
+  addToTicker(await getNowPlaying());
+
+  // Messages from Google Sheet
+  const sheetMessages = await getSheetMessages();
+  if (sheetMessages.length === 0) {
+    addToTicker("No messages yet. Add some via the control panel!");
+  } else {
+    sheetMessages.forEach(msg => addToTicker(msg));
+  }
+
+  // Duplicate for smooth scroll
+  ticker.innerHTML += ticker.innerHTML;
+
+  // Start scrolling
+  const move = document.querySelector(".psr-move");
+  const totalWidth = move.scrollWidth;
+  const duration = totalWidth / scrollSpeed;
+  move.style.animation = `scroll ${duration}s linear infinite`;
+}
+
+// Initial build
+buildTicker();
+
+// Refresh ticker every 10 seconds to catch new messages
+setInterval(buildTicker, 10000);
+</script>
