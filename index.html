@@ -1,12 +1,4 @@
-<!-- PRODIGAL SUN RADIO CONTROL PANEL + MANUAL TICKER -->
-<div class="control-panel">
-  <h1>🎧 Prodigal Sun Radio Control</h1>
-
-  <input type="text" id="newMessage" placeholder="Enter ticker message" style="width:300px; padding:10px; font-size:16px;">
-  <button onclick="postMessage()">Add Message</button>
-  <p id="status"></p>
-</div>
-
+<!-- PRODIGAL SUN RADIO MANUAL TICKER -->
 <div class="psr-ticker">
   <div class="psr-label">PSR LIVE</div>
   <div class="psr-wrap">
@@ -15,11 +7,6 @@
 </div>
 
 <style>
-body { font-family: Arial,sans-serif; background:#111; color:#fff; text-align:center; padding:30px; }
-button { padding:10px 20px; margin-left:10px; font-size:16px; cursor:pointer; background:#1db954; border:none; border-radius:6px; color:white; }
-button:hover { background:#17a74a; }
-input { border-radius:6px; border:none; margin-right:10px; }
-
 .psr-ticker{
   display:flex;
   align-items:center;
@@ -28,7 +15,6 @@ input { border-radius:6px; border:none; margin-right:10px; }
   padding:10px 16px;
   overflow:hidden;
   font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
-  margin-top:20px;
 }
 
 .psr-label{
@@ -66,20 +52,23 @@ input { border-radius:6px; border:none; margin-right:10px; }
 </style>
 
 <script>
+/* =========================
+CONFIG
+========================= */
 const ticker = document.getElementById("psrTicker");
 const scrollSpeed = 55; // px per second
 
-// Your Google Script deployed URL
+// Google Script doGet URL for control panel messages
 const SHEET_API = "https://script.google.com/macros/s/AKfycbwUjfx6Wm0etSb4V3GO6WjxNp6veeAFcCtlSRZqJI3olyWGhhaZHM3Sa1KTeRwXN-Bo/exec";
 
-// =========================
-// TICKER FUNCTIONS
-// =========================
+/* =========================
+HELPER FUNCTIONS
+========================= */
 async function getSheetMessages() {
   try {
     const res = await fetch(SHEET_API);
     const data = await res.json();
-    return data; // array of strings
+    return data; // expects array of strings
   } catch(err) {
     console.log("Error fetching ticker messages", err);
     return [];
@@ -92,8 +81,11 @@ function addToTicker(text) {
   ticker.appendChild(span);
 }
 
+/* =========================
+BUILD TICKER
+========================= */
 async function buildTicker() {
-  ticker.innerHTML = "";
+  ticker.innerHTML = ""; // clear previous content (only once on load)
 
   const sheetMessages = await getSheetMessages();
   if(sheetMessages.length === 0){
@@ -102,7 +94,7 @@ async function buildTicker() {
     sheetMessages.forEach(msg => addToTicker(msg));
   }
 
-  // Duplicate for smooth scroll
+  // Duplicate for smooth infinite scroll
   ticker.innerHTML += ticker.innerHTML;
 
   // Start animation
@@ -114,34 +106,4 @@ async function buildTicker() {
 
 // initial load
 buildTicker();
-
-// =========================
-// CONTROL PANEL POST FUNCTION
-// =========================
-async function postMessage() {
-  const input = document.getElementById("newMessage");
-  const msg = input.value.trim();
-  const status = document.getElementById("status");
-  if(!msg) return;
-
-  status.innerText = "Sending...";
-  
-  try {
-    await fetch(SHEET_API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: msg })
-    });
-
-    status.innerText = "Message added!";
-    input.value = "";
-
-    // Rebuild ticker immediately after posting
-    buildTicker();
-
-  } catch(e) {
-    console.error(e);
-    status.innerText = "Error sending message.";
-  }
-}
 </script>
