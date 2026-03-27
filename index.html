@@ -68,8 +68,6 @@ input { border-radius:6px; border:none; margin-right:10px; }
 <script>
 const ticker = document.getElementById("psrTicker");
 const scrollSpeed = 55; // px per second
-
-// Google Script deployed URL for control panel messages
 const SHEET_API = "https://script.google.com/macros/s/AKfycbwUjfx6Wm0etSb4V3GO6WjxNp6veeAFcCtlSRZqJI3olyWGhhaZHM3Sa1KTeRwXN-Bo/exec";
 
 // =========================
@@ -110,15 +108,12 @@ async function buildTicker() {
 
   // Restart animation properly
   const move = document.querySelector(".psr-move");
-  move.style.animation = "none";         // stop previous animation
-  void move.offsetWidth;                 // force browser reflow
+  move.style.animation = "none";          // stop previous animation
+  void move.offsetWidth;                  // force browser reflow
   const totalWidth = move.scrollWidth;
   const duration = totalWidth / scrollSpeed;
   move.style.animation = `scroll ${duration}s linear infinite`;
 }
-
-// initial load
-buildTicker();
 
 // =========================
 // CONTROL PANEL POST FUNCTION
@@ -149,4 +144,12 @@ async function postMessage() {
     status.innerText = "Error sending message.";
   }
 }
+
+// =========================
+// INITIAL LOAD + AUTO REFRESH
+// =========================
+buildTicker();
+
+// auto-refresh ticker every 10 seconds to catch new messages from other users/devices
+setInterval(buildTicker, 10000);
 </script>
