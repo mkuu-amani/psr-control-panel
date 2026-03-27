@@ -1,155 +1,104 @@
-<!-- PRODIGAL SUN RADIO CONTROL PANEL + MANUAL TICKER -->
-<div class="control-panel">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PSR Control Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      padding: 50px;
+    }
+
+    button {
+      padding: 15px 25px;
+      font-size: 18px;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #1db954;
+      color: white;
+    }
+
+    button:hover {
+      background: #17a74a;
+    }
+
+    #albumArt {
+      width: 240px;
+      height: 240px;
+      object-fit: cover;
+      border-radius: 18px;
+      margin-bottom: 18px;
+      box-shadow: 0 0 35px #C9A227, 0 0 65px #B8860B;
+    }
+
+    #artist {
+      font-size: 1.5em;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    #title {
+      font-size: 1.2em;
+      opacity: 0.9;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+
   <h1>🎧 Prodigal Sun Radio Control</h1>
 
-  <input type="text" id="newMessage" placeholder="Enter ticker message" style="width:300px; padding:10px; font-size:16px;">
-  <button onclick="postMessage()">Add Message</button>
+  <img id="albumArt" src="https://i.imgur.com/QPevqGi.png">
+  <div id="artist">Loading…</div>
+  <div id="title">Please wait</div>
+
+  <button onclick="postNowPlaying()">Post Now Playing to Facebook</button>
   <p id="status"></p>
-</div>
 
-<div class="psr-ticker">
-  <div class="psr-label">PSR LIVE</div>
-  <div class="psr-wrap">
-    <div class="psr-move" id="psrTicker"></div>
-  </div>
-</div>
+  <script>
+    const API = "https://api.radioking.io/widget/radio/the-channel-x/track/current";
 
-<style>
-body { font-family: Arial,sans-serif; background:#111; color:#fff; text-align:center; padding:30px; }
-button { padding:10px 20px; margin-left:10px; font-size:16px; cursor:pointer; background:#1db954; border:none; border-radius:6px; color:white; }
-button:hover { background:#17a74a; }
-input { border-radius:6px; border:none; margin-right:10px; }
+    async function updateNowPlaying() {
+      try {
+        const res = await fetch(API, { cache: "no-store" });
+        const data = await res.json();
 
-.psr-ticker{
-  display:flex;
-  align-items:center;
-  background:#0b0b0b;
-  border-radius:14px;
-  padding:10px 16px;
-  overflow:hidden;
-  font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
-  margin-top:20px;
-}
+        const artist = data.artist || "Unknown Artist";
+        const title = data.title || "Unknown Title";
+        const cover = data.cover || "https://i.imgur.com/QPevqGi.png";
 
-.psr-label{
-  font-size:18px;
-  font-weight:700;
-  margin-right:14px;
-  color:#f7c873;
-  white-space:nowrap;
-}
+        document.getElementById("artist").textContent = artist;
+        document.getElementById("title").textContent = title;
+        document.getElementById("albumArt").src = cover;
 
-.psr-wrap{
-  flex:1;
-  overflow:hidden;
-}
+      } catch(e) {
+        document.getElementById("artist").textContent = "Stream Offline";
+        document.getElementById("title").textContent = "";
+      }
+    }
 
-.psr-move{
-  display:inline-flex;
-  gap:56px;
-  white-space:nowrap;
-}
+    // refresh now playing every 15 seconds
+    updateNowPlaying();
+    setInterval(updateNowPlaying, 15000);
 
-.psr-move span{
-  font-size:18px;
-  color:#f7c873;
-}
+    function postNowPlaying() {
+      document.getElementById("status").innerText = "Sending...";
 
-@keyframes scroll{
-  0%{transform:translateX(0)}
-  100%{transform:translateX(-50%)}
-}
-
-.psr-ticker:hover .psr-move{
-  animation-play-state:paused;
-}
-</style>
-
-<script>
-const ticker = document.getElementById("psrTicker");
-const scrollSpeed = 55; // px per second
-const SHEET_API = "https://script.google.com/macros/s/AKfycbwUjfx6Wm0etSb4V3GO6WjxNp6veeAFcCtlSRZqJI3olyWGhhaZHM3Sa1KTeRwXN-Bo/exec";
-
-// =========================
-// TICKER FUNCTIONS
-// =========================
-async function getSheetMessages() {
-  try {
-    const res = await fetch(SHEET_API);
-    const data = await res.json();
-    return data; // array of strings
-  } catch(err) {
-    console.log("Error fetching ticker messages", err);
-    return [];
-  }
-}
-
-function addToTicker(text) {
-  const span = document.createElement("span");
-  span.textContent = text;
-  ticker.appendChild(span);
-}
-
-// =========================
-// BUILD TICKER
-// =========================
-async function buildTicker() {
-  ticker.innerHTML = ""; // clear previous content
-
-  const sheetMessages = await getSheetMessages();
-  if(sheetMessages.length === 0){
-    addToTicker("No messages yet. Add some via the control panel!");
-  } else {
-    sheetMessages.forEach(msg => addToTicker(msg));
-  }
-
-  // Duplicate for smooth scroll
-  ticker.innerHTML += ticker.innerHTML;
-
-  // Restart animation properly
-  const move = document.querySelector(".psr-move");
-  move.style.animation = "none";          // stop previous animation
-  void move.offsetWidth;                  // force browser reflow
-  const totalWidth = move.scrollWidth;
-  const duration = totalWidth / scrollSpeed;
-  move.style.animation = `scroll ${duration}s linear infinite`;
-}
-
-// =========================
-// CONTROL PANEL POST FUNCTION
-// =========================
-async function postMessage() {
-  const input = document.getElementById("newMessage");
-  const msg = input.value.trim();
-  const status = document.getElementById("status");
-  if(!msg) return;
-
-  status.innerText = "Sending...";
-  
-  try {
-    await fetch(SHEET_API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: msg })
-    });
-
-    status.innerText = "Message added!";
-    input.value = "";
-
-    // Rebuild ticker immediately after posting
-    buildTicker();
-
-  } catch(e) {
-    console.error(e);
-    status.innerText = "Error sending message.";
-  }
-}
-
-// =========================
-// INITIAL LOAD + AUTO REFRESH
-// =========================
-buildTicker();
-
-// auto-refresh ticker every 10 seconds to catch new messages from other users/devices
-setInterval(buildTicker, 10000);
-</script>
+      fetch("https://hooks.zapier.com/hooks/catch/25494123/ugnx0s6/", {
+        method: "POST"
+      })
+      .then(() => {
+        document.getElementById("status").innerText = "Posted successfully!";
+      })
+      .catch(() => {
+        document.getElementById("status").innerText = "Error sending request.";
+      });
+    }
+  </script>
+</body>
+</html>
