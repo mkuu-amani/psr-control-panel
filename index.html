@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PSR Control Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      padding: 50px;
+    }
+
+    button {
+      padding: 15px 25px;
+      font-size: 18px;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #1db954;
+      color: white;
+    }
+
+    button:hover {
+      background: #17a74a;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎧 Prodigal Sun Radio Control</h1>
+
+  <button onclick="postNowPlaying()">Post Now Playing</button>
+
+  <p id="status"></p>
+
+  <script>
+    function postNowPlaying() {
+      document.getElementById("status").innerText = "Sending...";
+
+      fetch("https://hooks.zapier.com/hooks/catch/25494123/ugnx0s6/", {
+        method: "POST"
+      })
+      .then(response => {
+        document.getElementById("status").innerText = "Posted successfully!";
+      })
+      .catch(error => {
+        document.getElementById("status").innerText = "Error sending request.";
+      });
+    }
+  </script>
+
+</body>
+</html>
