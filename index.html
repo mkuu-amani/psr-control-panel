@@ -1,140 +1,147 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>PSR Control Panel</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      text-align: center;
-      padding: 50px;
-    }
-
-    h1 {
-      margin-bottom: 40px;
-    }
-
-    button {
-      padding: 15px 25px;
-      font-size: 18px;
-      margin: 10px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      background: #1db954;
-      color: white;
-    }
-
-    button:hover {
-      background: #17a74a;
-    }
-
-    #cover {
-      width: 200px;
-      height: 200px;
-      object-fit: cover;
-      border-radius: 10px;
-      margin-top: 20px;
-    }
-
-    #track {
-      margin-top: 15px;
-      font-size: 18px;
-    }
-
-    input {
-      padding: 10px;
-      width: 250px;
-      border-radius: 6px;
-      border: none;
-      margin-top: 20px;
-      font-size: 16px;
-    }
-  </style>
-</head>
-<body>
-
+<!-- PRODIGAL SUN RADIO CONTROL PANEL + MANUAL TICKER -->
+<div class="control-panel">
   <h1>🎧 Prodigal Sun Radio Control</h1>
 
-  <!-- Now Playing -->
-  <img id="cover" src="https://i.imgur.com/QPevqGi.png">
-  <div id="track">Loading current track...</div>
-
-  <!-- Manual post to Facebook -->
-  <button onclick="postNowPlaying()">Post Now Playing</button>
+  <input type="text" id="newMessage" placeholder="Enter ticker message" style="width:300px; padding:10px; font-size:16px;">
+  <button onclick="postMessage()">Add Message</button>
   <p id="status"></p>
+</div>
 
-  <!-- Ticker Control -->
-  <div>
-    <input id="tickerInput" placeholder="Enter ticker message">
-    <button onclick="sendTicker()">Update Ticker</button>
+<div class="psr-ticker">
+  <div class="psr-label">PSR LIVE</div>
+  <div class="psr-wrap">
+    <div class="psr-move" id="psrTicker"></div>
   </div>
+</div>
 
-  <script>
-    /* =========================
-    CONFIG
-    ========================= */
-    const NOW_PLAYING_API = "https://api.radioking.io/widget/radio/the-channel-x/track/current";
-    const ZAPIER_HOOK = "https://hooks.zapier.com/hooks/catch/25494123/ugnx0s6/";
-    const TICKER_API = "https://script.google.com/macros/s/AKfycbwUjfx6Wm0etSb4V3GO6WjxNp6veeAFcCtlSRZqJI3olyWGhhaZHM3Sa1KTeRwXN-Bo/exec"; // Google Script for ticker
+<style>
+body { font-family: Arial,sans-serif; background:#111; color:#fff; text-align:center; padding:30px; }
+button { padding:10px 20px; margin-left:10px; font-size:16px; cursor:pointer; background:#1db954; border:none; border-radius:6px; color:white; }
+button:hover { background:#17a74a; }
+input { border-radius:6px; border:none; margin-right:10px; }
 
-    /* =========================
-    FETCH NOW PLAYING
-    ========================= */
-    async function updateNowPlaying() {
-      try {
-        const res = await fetch(NOW_PLAYING_API, { cache: "no-store" });
-        const data = await res.json();
+.psr-ticker{
+  display:flex;
+  align-items:center;
+  background:#0b0b0b;
+  border-radius:14px;
+  padding:10px 16px;
+  overflow:hidden;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+  margin-top:20px;
+}
 
-        const artist = data.artist || "Unknown Artist";
-        const title = data.title || "Unknown Title";
-        const cover = data.cover || "https://i.imgur.com/QPevqGi.png";
+.psr-label{
+  font-size:18px;
+  font-weight:700;
+  margin-right:14px;
+  color:#f7c873;
+  white-space:nowrap;
+}
 
-        document.getElementById("track").innerText = artist + " - " + title;
-        document.getElementById("cover").src = cover;
-      } catch(err) {
-        document.getElementById("track").innerText = "Unable to load track";
-      }
-    }
+.psr-wrap{
+  flex:1;
+  overflow:hidden;
+}
 
-    updateNowPlaying();
-    setInterval(updateNowPlaying, 15000);
+.psr-move{
+  display:inline-flex;
+  gap:56px;
+  white-space:nowrap;
+}
 
-    /* =========================
-    POST TO FACEBOOK (Zapier)
-    ========================= */
-    function postNowPlaying() {
-      document.getElementById("status").innerText = "Sending...";
+.psr-move span{
+  font-size:18px;
+  color:#f7c873;
+}
 
-      fetch(ZAPIER_HOOK, { method: "POST" })
-        .then(response => {
-          document.getElementById("status").innerText = "Posted successfully!";
-        })
-        .catch(error => {
-          document.getElementById("status").innerText = "Error sending request.";
-        });
-    }
+@keyframes scroll{
+  0%{transform:translateX(0)}
+  100%{transform:translateX(-50%)}
+}
 
-    /* =========================
-    SEND TICKER MESSAGE
-    ========================= */
-    function sendTicker() {
-      const msg = document.getElementById("tickerInput").value.trim();
-      if(!msg) return alert("Enter a message");
+.psr-ticker:hover .psr-move{
+  animation-play-state:paused;
+}
+</style>
 
-      fetch(TICKER_API, {
-        method: "POST",
-        body: JSON.stringify({ message: msg })
-      })
-      .then(() => {
-        alert("Ticker updated!");
-        document.getElementById("tickerInput").value = "";
-      })
-      .catch(() => alert("Error updating ticker"));
-    }
-  </script>
+<script>
+const ticker = document.getElementById("psrTicker");
+const scrollSpeed = 55; // px per second
 
-</body>
-</html>
+// Your Google Script deployed URL
+const SHEET_API = "https://script.google.com/macros/s/AKfycbwUjfx6Wm0etSb4V3GO6WjxNp6veeAFcCtlSRZqJI3olyWGhhaZHM3Sa1KTeRwXN-Bo/exec";
+
+// =========================
+// TICKER FUNCTIONS
+// =========================
+async function getSheetMessages() {
+  try {
+    const res = await fetch(SHEET_API);
+    const data = await res.json();
+    return data; // array of strings
+  } catch(err) {
+    console.log("Error fetching ticker messages", err);
+    return [];
+  }
+}
+
+function addToTicker(text) {
+  const span = document.createElement("span");
+  span.textContent = text;
+  ticker.appendChild(span);
+}
+
+async function buildTicker() {
+  ticker.innerHTML = "";
+
+  const sheetMessages = await getSheetMessages();
+  if(sheetMessages.length === 0){
+    addToTicker("No messages yet. Add some via the control panel!");
+  } else {
+    sheetMessages.forEach(msg => addToTicker(msg));
+  }
+
+  // Duplicate for smooth scroll
+  ticker.innerHTML += ticker.innerHTML;
+
+  // Start animation
+  const move = document.querySelector(".psr-move");
+  const totalWidth = move.scrollWidth;
+  const duration = totalWidth / scrollSpeed;
+  move.style.animation = `scroll ${duration}s linear infinite`;
+}
+
+// initial load
+buildTicker();
+
+// =========================
+// CONTROL PANEL POST FUNCTION
+// =========================
+async function postMessage() {
+  const input = document.getElementById("newMessage");
+  const msg = input.value.trim();
+  const status = document.getElementById("status");
+  if(!msg) return;
+
+  status.innerText = "Sending...";
+  
+  try {
+    await fetch(SHEET_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg })
+    });
+
+    status.innerText = "Message added!";
+    input.value = "";
+
+    // Rebuild ticker immediately after posting
+    buildTicker();
+
+  } catch(e) {
+    console.error(e);
+    status.innerText = "Error sending message.";
+  }
+}
+</script>
