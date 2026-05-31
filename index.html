@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>PSR Control Panel</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -52,89 +53,264 @@
       margin-top: 20px;
       font-size: 16px;
     }
+
+    /* =========================
+       NEON TICKER (INTEGRATED)
+    ========================= */
+
+    #neon-ticker-wrapper {
+      max-width: 980px;
+      width: 100%;
+      margin: 40px auto 0;
+      padding: 6px;
+      box-sizing: border-box;
+    }
+
+    #neon-ticker {
+      position: relative;
+      overflow: hidden;
+
+      width: 100%;
+      background: linear-gradient(90deg, #040308 0%, #14131a 100%);
+      border-radius: 12px;
+
+      padding: clamp(10px, 2vw, 14px) clamp(12px, 2.5vw, 20px);
+
+      box-shadow:
+        0 0 40px rgba(10,200,255,0.06),
+        inset 0 0 30px rgba(10,200,255,0.03);
+
+      min-height: 56px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      color: #0ff;
+
+      font-family: Arial, sans-serif;
+      box-sizing: border-box;
+    }
+
+    .ticker-item {
+      position: absolute;
+
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+
+      max-width: 100%;
+      text-align: center;
+
+      font-size: clamp(12px, 1.4vw, 15px);
+      line-height: 1.35;
+
+      text-shadow:
+        0 0 6px currentColor,
+        0 0 12px currentColor;
+    }
+
+    .cat-history { color: #68d7ff; }
+    .cat-global  { color: #7CFF8C; }
+    .cat-africa  { color: #D3A0FF; }
+    .cat-now     { color: #FFB86B; }
+
+    .ticker-enter {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+
+    .ticker-visible {
+      opacity: 1;
+      transform: translateX(0);
+      transition: transform 2.2s ease, opacity 2.2s ease;
+    }
+
+    .ticker-exit {
+      opacity: 0;
+      transform: translateX(-16px);
+      transition: transform 2.2s ease, opacity 2.2s ease;
+    }
+
+    @media (max-width: 600px) {
+      #neon-ticker-wrapper {
+        padding: 0 8px;
+      }
+
+      #neon-ticker {
+        min-height: 70px;
+      }
+
+      .ticker-item {
+        font-size: 13px;
+      }
+    }
+
   </style>
 </head>
+
 <body>
 
   <h1>🎧 Prodigal Sun Radio Control</h1>
 
-  <!-- Now Playing -->
+  <!-- NOW PLAYING -->
   <img id="cover" src="https://i.imgur.com/QPevqGi.png">
   <div id="track">Loading current track...</div>
 
-  <!-- Manual post to Facebook -->
   <button onclick="postNowPlaying()">Post Now Playing</button>
   <p id="status"></p>
 
-  <!-- Ticker Control -->
   <div>
     <input id="tickerInput" placeholder="Enter ticker message">
     <button onclick="sendTicker()">Update Ticker</button>
   </div>
 
-  <script>
-    /* =========================
-    CONFIG
-    ========================= */
-    const NOW_PLAYING_API = "https://api.radioking.io/widget/radio/the-channel-x/track/current";
-    const ZAPIER_HOOK = "https://hooks.zapier.com/hooks/catch/25494123/ugnx0s6/";
-    const TICKER_API = "https://script.google.com/macros/s/AKfycbwUjfx6Wm0etSb4V3GO6WjxNp6veeAFcCtlSRZqJI3olyWGhhaZHM3Sa1KTeRwXN-Bo/exec"; // Google Script for ticker
+  <!-- =========================
+       NEON TICKER MODULE
+  ========================== -->
+  <div id="neon-ticker-wrapper">
+    <div id="neon-ticker">
+      <div id="ticker-item" class="ticker-item"></div>
+    </div>
+  </div>
 
-    /* =========================
-    FETCH NOW PLAYING
-    ========================= */
-    async function updateNowPlaying() {
-      try {
-        const res = await fetch(NOW_PLAYING_API, { cache: "no-store" });
-        const data = await res.json();
+<script>
 
-        const artist = data.artist || "Unknown Artist";
-        const title = data.title || "Unknown Title";
-        const cover = data.cover || "https://i.imgur.com/QPevqGi.png";
+const NOW_PLAYING_API = "https://api.radioking.io/widget/radio/the-channel-x/track/current";
+const ZAPIER_HOOK = "https://hooks.zapier.com/hooks/catch/25494123/ugnx0s6/";
+const TICKER_API = "https://script.google.com/macros/s/AKfycbwUjfx6Wm0etSb4V3GO6WjxNp6veeAFcCtlSRZqJI3olyWGhhaZHM3Sa1KTeRwXN-Bo/exec";
 
-        document.getElementById("track").innerText = artist + " - " + title;
-        document.getElementById("cover").src = cover;
-      } catch(err) {
-        document.getElementById("track").innerText = "Unable to load track";
-      }
-    }
+/* =========================
+   NOW PLAYING
+========================= */
+async function updateNowPlaying() {
+  try {
+    const res = await fetch(NOW_PLAYING_API, { cache: "no-store" });
+    const data = await res.json();
 
-    updateNowPlaying();
-    setInterval(updateNowPlaying, 15000);
+    const artist = data.artist || "Unknown Artist";
+    const title = data.title || "Unknown Title";
+    const cover = data.cover || "https://i.imgur.com/QPevqGi.png";
 
-    /* =========================
-    POST TO FACEBOOK (Zapier)
-    ========================= */
-    function postNowPlaying() {
-      document.getElementById("status").innerText = "Sending...";
+    document.getElementById("track").innerText = artist + " - " + title;
+    document.getElementById("cover").src = cover;
 
-      fetch(ZAPIER_HOOK, { method: "POST" })
-        .then(response => {
-          document.getElementById("status").innerText = "Posted successfully!";
-        })
-        .catch(error => {
-          document.getElementById("status").innerText = "Error sending request.";
-        });
-    }
+  } catch(err) {
+    document.getElementById("track").innerText = "Unable to load track";
+  }
+}
 
-    /* =========================
-    SEND TICKER MESSAGE
-    ========================= */
-    function sendTicker() {
-      const msg = document.getElementById("tickerInput").value.trim();
-      if(!msg) return alert("Enter a message");
+updateNowPlaying();
+setInterval(updateNowPlaying, 15000);
 
-      fetch(TICKER_API, {
-        method: "POST",
-        body: JSON.stringify({ message: msg })
-      })
-      .then(() => {
-        alert("Ticker updated!");
-        document.getElementById("tickerInput").value = "";
-      })
-      .catch(() => alert("Error updating ticker"));
-    }
-  </script>
+/* =========================
+   FACEBOOK POST
+========================= */
+function postNowPlaying() {
+  document.getElementById("status").innerText = "Sending...";
+
+  fetch(ZAPIER_HOOK, { method: "POST" })
+    .then(() => document.getElementById("status").innerText = "Posted successfully!")
+    .catch(() => document.getElementById("status").innerText = "Error sending request.");
+}
+
+/* =========================
+   SEND TICKER
+========================= */
+function sendTicker() {
+  const msg = document.getElementById("tickerInput").value.trim();
+  if (!msg) return alert("Enter a message");
+
+  fetch(TICKER_API, {
+    method: "POST",
+    body: JSON.stringify({ message: msg })
+  })
+  .then(() => {
+    alert("Ticker updated!");
+    document.getElementById("tickerInput").value = "";
+  })
+  .catch(() => alert("Error updating ticker"));
+}
+
+/* =========================
+   NEON TICKER ENGINE
+========================= */
+
+const historyItems = [
+  "1895: Marconi sends first wireless signal.",
+  "1920: First commercial radio station.",
+  "1967: BBC Radio 1 launches.",
+  "2008: Spotify changes music forever."
+];
+
+const globalMilestones = [
+  "1964: The Beatles dominate charts.",
+  "1982: Thriller released.",
+  "2017: Despacito breaks records."
+];
+
+const africaJamaica = [
+  "1973: Reggae goes global.",
+  "2000: Sean Paul rises.",
+  "2019: Burna Boy wins global acclaim."
+];
+
+const combined = [];
+const maxLen = Math.max(historyItems.length, globalMilestones.length, africaJamaica.length);
+
+for (let i = 0; i < maxLen; i++) {
+  if (historyItems[i]) combined.push({text: historyItems[i], cat:"history"});
+  if (globalMilestones[i]) combined.push({text: globalMilestones[i], cat:"global"});
+  if (africaJamaica[i]) combined.push({text: africaJamaica[i], cat:"africa"});
+}
+
+let index = 0;
+let count = 0;
+const item = document.getElementById("ticker-item");
+
+async function nextItem() {
+
+  if (count >= 3) {
+    count = 0;
+    return { text: "🎶 Now Playing update coming soon...", cat:"now" };
+  }
+
+  const entry = combined[index % combined.length];
+  index++;
+  count++;
+  return entry;
+}
+
+function setItem(obj) {
+  item.textContent = obj.text;
+  item.className = "ticker-item cat-" + obj.cat;
+}
+
+async function loop() {
+
+  const obj = await nextItem();
+  setItem(obj);
+
+  item.classList.add("ticker-enter");
+  void item.offsetWidth;
+
+  item.classList.remove("ticker-enter");
+  item.classList.add("ticker-visible");
+
+  await new Promise(r => setTimeout(r, 4000));
+
+  item.classList.remove("ticker-visible");
+  item.classList.add("ticker-exit");
+
+  await new Promise(r => setTimeout(r, 2200));
+
+  requestAnimationFrame(loop);
+}
+
+setTimeout(loop, 500);
+
+</script>
 
 </body>
+</html>
 </html>
